@@ -1,0 +1,295 @@
+---
+title: "Final Project"
+author: "Samira Zarandioon and Bradley Robinson"
+date: "8/10/2018"
+output: pdf_document
+---
+
+## Introduction
+
+## Data Description
+
+## Exploratory Analysis
+
+## Addressing Objective 1:
+	Restatement of Problem and the overall approach to solve it Required
+
+## Model Selection Required
+
+### Type of Selection
+			Any or all:  	, RIDGE, ELASTIC NET,
+			Stepwise, Forward, Backward 
+			Manual / Intuition		
+
+###		Checking Assumptions Required
+                                        Lack of fit test
+                                        Influential point analysis (Cook’s D and Leverage)
+			Optional  Residual Plots
+			
+###	Parameter Interpretation
+		Interpretation  Required
+		Confidence Intervals Required
+	
+### Final conclusions from the analyses of Objective 1 Required
+
+## Addressing Objective 2
+Make sure it is clear how many models were created to compete against the one in Objective 1.  Make note of any tuning parameters that were used and how you came up with them (knn and random forest logistics)  Required
+
+Main Analysis Content Required
+	Overall report of the error metrics on a test set or CV run.  Also if the two best models have error rates of .05 and .045,  can we really say that one model is outperforming the other?  What other tools that we learned in the second half of this class that could help us get at that?
+
+## Conclusion/Discussion Required
+		The conclusion should reprise the questions and conclusions of objective 2 with recommendations of the final model, what could be done to help analysis and model building in the future, and any insight as to why one method outshined all the rest if that is indeed the case.  If they all are similar why did you go with your final model?
+
+## Appendix Required
+	Well commented SAS/R Code Required
+ 	Graphics and summary tables (Can be placed in the appendix or in the written report itself.)
+
+```{r}
+library(MASS)       # provides LDA & QDA model functions
+
+
+glow500 <- read.csv(file="glow500.csv",head=TRUE,sep=",")
+
+set.seed(123)
+sample <- sample(c(TRUE, FALSE), nrow(glow500), replace = T, prob = c(0.6,0.4))
+train <- glow500[sample, ]
+test <- glow500[!sample, ]
+
+(lda.m1 <- lda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+```
+
+```{r}
+pairs(glow500)
+```
+
+```{r}
+#The cor() function produces a matrix that contains all of the pairwise correlations among the predictors in a data set. 
+cor(glow500)
+```
+
+Train randomforest:
+
+```{r}
+library(randomForest)
+train$FRACTURE_F <- as.factor(train$FRACTURE)
+rf.m <- randomForest(FRACTURE_F ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=4, ntree=30)
+test.predicted.rf <- predict(rf.m, newdata = test, type="response")
+
+```
+
+Linear Discriminant Analysis
+
+```{r}
+(lda.m1 <- lda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+```
+
+```{r}
+plot(lda.m1)
+```
+
+```{r}
+(qda.m1 <- qda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+```
+
+Train linear regression model:
+
+```{r}
+(glm.fit <- glm(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+```
+
+Evaluate random forest:
+
+```{r}
+
+library(randomForest)
+train$FRACTURE <- as.factor(train$FRACTURE)
+rf.m <- randomForest(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=5, ntree=5)
+test.predicted.rf <- predict(rf.m, newdata = test, type="response")
+
+test.predicted.rf <- predict(rf.m, newdata = test, type="response")
+# confusion matrix
+table(test$FRACTURE, test.predicted.rf)
+# accuracy rate
+mean(test.predicted.rf == test$FRACTURE)
+```
+
+Evaluate Linear Discriminant Analysis Model:
+
+```{r}
+# predictions
+test.predicted.lda <- predict(lda.m1, newdata = test)
+
+# confusion matrix
+table(test$FRACTURE, test.predicted.lda$class)
+# accuracy rate
+mean(test.predicted.lda$class == test$FRACTURE)
+
+```
+
+
+```{r}
+# predictions
+test.predicted.qda <- predict(qda.m1, newdata = test)
+
+# confusion matrix
+table(test$FRACTURE, test.predicted.qda$class)
+
+# accuracy rate
+mean(test.predicted.qda$class == test$FRACTURE)
+```
+
+Evaluate Linear Regression Model:
+
+Confusion Metrix:
+```{r}
+# predictions
+glm.probs <- predict(glm.fit, test, type = "response")
+
+# confusion matrix
+table(test$FRACTURE, ifelse(glm.probs < 0.5, 0, 1))
+```
+
+Accuracy:
+```{r}
+# accuracy rate
+mean(ifelse(glm.probs > 0.5, 1 , 0) == test$FRACTURE)
+```
+
+
+
+```{r}
+# ROC curves
+library(ROCR)
+library(dplyr)
+
+library(randomForest)
+train$FRACTURE <- as.factor(train$FRACTURE)
+rf.m <- randomForest(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=5, ntree= 1000)
+test.predicted.rf <- predict(rf.m, newdata = test, type="response")
+
+
+logistic <- prediction(glm.probs, test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+lda <- prediction(test.predicted.lda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+qda <- prediction(test.predicted.qda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+test.predicted.rf.prob <- predict(rf.m, newdata = test, type="prob")
+rf <- prediction(test.predicted.rf.prob[,2], test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+plot(logistic, col = "red")
+plot(lda, add = TRUE, col = "blue")
+plot(qda, add = TRUE, col = "green")
+plot(rf, add = TRUE, col = "yellow")
+
+```
+
+```{r}
+# Logistic regression AUC
+prediction(glm.probs, test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+# LDA AUC
+prediction(test.predicted.lda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+# QDA AUC
+prediction(test.predicted.qda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+# RandomForest AUC
+prediction(test.predicted.rf.prob[,2], test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+```
+
+
+
+
+SAS Codes:
+
+
+```
+LIBNAME MYSASLIB '/home/szarandioon0/';
+DATA GLOW500_ORIG;
+INFILE '/home/szarandioon0/statistics2/Project2/glow500.csv' DLM = ',' FIRSTOBS = 2;
+INPUT SUB_ID SITE_ID PHY_ID	PRIORFRAC AGE WEIGHT HEIGHT BMI PREMENO MOMFRAC ARMASSIST SMOKE RATERISK FRACSCORE FRACTURE;
+RUN;
+
+DATA GLOW500(DROP = SUB_ID); 
+SET GLOW500_ORIG;
+RUN;
+
+proc factor data=GLOW500 simple corr;
+run;
+
+ods graphics on;
+proc princomp data=GLOW500 plots(ncomp=3)=all n=5;
+run;
+
+proc candisc data=GLOW500 out=discrim_out ; 
+  class FRACTURE; 
+  var SITE_ID	PHY_ID PRIORFRAC AGE WEIGHT HEIGHT BMI PREMENO MOMFRAC ARMASSIST SMOKE RATERISK FRACSCORE;
+run;
+
+	title 'Stepwise Regression on Global Longitudinal Study of Osteoporosis in Women (GLOW) Dataset';
+	proc logistic data=GLOW500 outest=betas covout;
+	model FRACTURE(event='1')=SITE_ID PHY_ID PRIORFRAC AGE WEIGHT HEIGHT BMI PREMENO	MOMFRAC	ARMASSIST	SMOKE	RATERISK	FRACSCORE
+	                   / selection=stepwise;
+	output out=pred p=phat lower=lcl upper=ucl predprob=(individual crossvalidate);
+	run;
+
+data train test;
+set GLOW500;
+if rand('uniform') <= 0.3
+then output test;
+else output train;
+run;
+
+ods graphics on;
+proc logistic data=train;
+model FRACTURE(event="1") = RATERISK FRACSCORE HEIGHT / outroc=troc;
+score data=test out=valpred outroc=vroc;
+roc; roccontrast;
+run;
+
+proc logistic data=train plots(only)=roc;
+model FRACTURE(event="1") = RATERISK FRACSCORE HEIGHT;
+run;
+
+proc logistic data=train rocoptions(crossvalidate) plots(only)=roc;
+model FRACTURE(event="1") = RATERISK FRACSCORE HEIGHT;
+run;
+
+proc discrim data=train testdata=test canonical;
+class FRACTURE;
+var SITE_ID	PHY_ID PRIORFRAC AGE WEIGHT HEIGHT BMI PREMENO MOMFRAC ARMASSIST SMOKE RATERISK FRACSCORE;
+run;
+
+proc hpforest data=train;
+target FRACTURE/level=nominal;
+input PRIORFRAC PREMENO MOMFRAC ARMASSIST SMOKE/level=nominal;
+input SITE_ID PHY_ID AGE WEIGHT HEIGHT BMI RATERISK FRACSCORE/level=interval;
+run;
+
+
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
