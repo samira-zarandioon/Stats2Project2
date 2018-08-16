@@ -7,18 +7,93 @@ output: pdf_document
 
 ## Introduction
 
+This data analysis report is based on a data set that is collected by the Global Longitudinal Study of Osteoporosis in Women (GLOW). According the official website of the research team (http://www.outcomes-umassmed.org/glow/), the goal of this research was to improve understanding of the risk and prevention of osteoporosis-related fractures among female residents of 10 countries who were 55 years of age and older. GLOW enrolled over 60,000 women through over 700 physicians in 10 countries, and conducted annual follow-up for up to 5 years through annual patient questionnaires. 
+
 ## Data Description
+
+The dataset used in this analysis is called GLOW500, which contains 500 observations from six sites in the united states. The target (outcome/response) variable FRACTURE indicates whether the subject had any fracture in the first year of followup. It includes 13 selected potential risk factors for fracture. According to the source of data, given the fact that fracture rate was only 4% these 500 observations are over sampled from 21,000 original observation. 
+
+Description of each field in the data set is as follows:
+
+Explanatory Variables:
+
+```
+SUB_ID: Id code for each subject (Categorical)
+SITE_ID: Id code for the study site (Categorical)
+PHY_ID: Id code for the Physician (Categorical)
+PRIORFRAC: Does the subject have history of prior fracture? (1 => Yes, 0 => No) (Bineary)
+AGE: Age at enrolment (Numeric)
+WEIGHT: Weight at enrollment (Numeric)
+HEIGHT: Height at enrollment (Numeric)
+BMI: Body mass index (Numeric)
+PREMENO: Did the subjet had Menopause before age 45? (1 => Yes, 0 => No) (Bineary)
+MOMFRAC: Has subject's mother ever had hip fracture? (1 => Yes, 0 => No) (Bineary)
+ARMASSIST: Does the subject need arms to stand form a chare? (1 => Yes, 0 => No) (Bineary)
+SMOKE: Is the subject a Smoker? (1 => Yes, 0 => No) (Bineary)
+RATERISK: Subject's self-reported risk of fractur (1 => Less than others of the same age, 2 => Same as others of the same age, 3 => Greater than others of the same age) (Categorical)
+FRACSCORE: Fracture risk score (Computed based on AGE, WEIGHT, ARMASSIST, SMOKE, MOMFRAC, PRIORFRAC)  (Neumeric)
+
+Response Variable:
+
+FRACTURE: Did subject have any fracture in first year? (1 => Yes, 0 => No) (Bineary)
+```
+
+A summary a of dataset that illustrates distribution of each filed is presented below:
+
+```{r, echo=FALSE}
+glow500 <- read.csv(file="glow500.csv",head=TRUE,sep=",")
+summary(glow500)
+```
 
 ## Exploratory Analysis
 
+The following graphical representation of correlations between the fields of glow500 datasets, gives us a very good understanding of how the explanatory variables are related to each other and the response variable. For example, it shows high correlation of PHY_ID and SITE_ID. It also shows that BMI is highly correlated to WEIGHT, which is driven by the definition of the BMI. Moreover, it shows that FRACSCORE is highly correlated with AGE, PRIORFRAC, ..., which are used to compute the risk. Correlated variables indicate some level of redundancy in the explanatory variables.
+
+Correlation of explanatory variables with the target variable FRACTURE is quite informative. The plot depicts that PRIORFRAC, AGE, ARMASSIST, and MOMFRAC have relatively high positive correlation to the target variable. However, HEIGHT has negative correlation to the target variable.
+
+```{r, echo=FALSE}
+# The following code illustrates the correlation matrix of the glov500 dataset
+#install.packages("corrplot")
+library(corrplot)
+glow500_corr <- cor(glow500)
+corrplot.mixed(glow500_corr, tl.pos="lt")
+```
+
+Performing Principal Component Analysis (PCA), against the numeric explanatory variables also gives us some insight on redundancy and importance of explanatory variables. As the following Scree Plot illustrates only three components can explain over 99% of variance, which indicates some redundancy in these variables that can be justified due to correlation between these variables.
+
+
+![Principal Component Analysis On Numerical Fields](pca_numeric.png)
+
+
+
 ## Addressing Objective 1:
-	Restatement of Problem and the overall approach to solve it Required
+
+We used step-wise parameter selection method for training a logistic regression model which produced the following model:
+
+![](logistic_regression_stepwise.png)
+
+The corresponding regression formula is as follows:
+
+Logit(Probability of Fracture) = log(Odds Ratio of Fracture) = log( Probability of Fracture/ (1-Probability of Fracture)) = 3.2477 - 0.0378 * HEIGHT + 0.4072 * RATERISK + 0.2244 * FRACSCORE
+
+In other words:
+
+Probability of Fracture = Softmax(3.2477 - 0.0378 * HEIGHT + 0.4072 * RATERISK + 0.2244 * FRACSCORE)
+
+The negative coefficient of HEIGHT is consistent with negative correlation that was illustrated by a pink circle in the correlation matrix in the previous section.
+
+The following tables shows how these three variables are selected and their corresponding p-value for selection.
+![](step_wise.png)
+
+Effect of each variable on the odds ratio (point estimate and 95% confidence interval) is presented in the following table:
+![](odds_ratio.png)
+
 
 ## Model Selection Required
 
 ### Type of Selection
 			Any or all:  	, RIDGE, ELASTIC NET,
-			Stepwise, Forward, Backward 
+			Step-wise, Forward, Backward 
 			Manual / Intuition		
 
 ###		Checking Assumptions Required
@@ -44,6 +119,10 @@ Main Analysis Content Required
 ## Appendix Required
 	Well commented SAS/R Code Required
  	Graphics and summary tables (Can be placed in the appendix or in the written report itself.)
+
+## References
+* Section 1.6.3: https://ia800206.us.archive.org/7/items/WileySeriesInProbabilityAndStatisticsDavidW.HosmerStanleyLemeshowRodneyX.Sturdiv/(Wiley%20Series%20in%20Probability%20and%20Statistics)%20David%20W.%20Hosmer,%20Stanley%20Lemeshow,%20Rodney%20X.%20Sturdivant%20(auth.),%20Walter%20A.%20Shewhart,%20Samuel%20S.%20Wilks%20(eds.)-Applied%20Logistic%20Regression-Wiley%20(2013).pdf
+* 
 
 ```{r}
 library(MASS)       # provides LDA & QDA model functions
@@ -141,7 +220,7 @@ mean(test.predicted.qda$class == test$FRACTURE)
 
 Evaluate Linear Regression Model:
 
-Confusion Metrix:
+Confusion Matrix:
 ```{r}
 # predictions
 glm.probs <- predict(glm.fit, test, type = "response")
