@@ -2,7 +2,9 @@
 title: "Final Project"
 author: "Samira Zarandioon and Bradley Robinson"
 date: "8/10/2018"
-output: pdf_document
+output:
+  pdf_document: default
+  word_document: default
 ---
 
 ## Introduction
@@ -47,11 +49,11 @@ summary(glow500)
 
 ## Exploratory Analysis
 
-The following graphical representation of correlations between the fields of glow500 datasets, gives us a very good understanding of how the explanatory variables are related to each other and the response variable. For example, it shows high correlation of PHY_ID and SITE_ID. It also shows that BMI is highly correlated to WEIGHT, which is driven by the definition of the BMI. Moreover, it shows that FRACSCORE is highly correlated with AGE, PRIORFRAC, ..., which are used to compute the risk. Correlated variables indicate some level of redundancy in the explanatory variables.
+Figure \ref{corr} shows a graphical representation of correlations between all the fields of glow500 datasets. This vidualizattion gives us a very good understanding of how the explanatory variables are related to each other and the response variable. For example, it shows high correlation between PHY_ID and SITE_ID. Also, from this figure we can easily see thhat BMI is highly correlated to WEIGHT, which is driven by the definition of the BMI. Moreover, it shows that FRACSCORE is highly correlated with AGE, PRIORFRAC, ..., which are used to compute the risk. Correlated variables indicate some level of redundancy in the explanatory variables.
 
 Correlation of explanatory variables with the target variable FRACTURE is quite informative. The plot depicts that PRIORFRAC, AGE, ARMASSIST, and MOMFRAC have relatively high positive correlation to the target variable. However, HEIGHT has negative correlation to the target variable.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, fig.cap="\\label{corr} Correlation Matrix"}
 # The following code illustrates the correlation matrix of the glov500 dataset
 #install.packages("corrplot")
 library(corrplot)
@@ -59,72 +61,75 @@ glow500_corr <- cor(glow500)
 corrplot.mixed(glow500_corr, tl.pos="lt")
 ```
 
-Performing Principal Component Analysis (PCA), against the numeric explanatory variables also gives us some insight on redundancy and importance of explanatory variables. As the following Scree Plot illustrates only three components can explain over 99% of variance, which indicates some redundancy in these variables that can be justified due to correlation between these variables.
+Performing Principal Component Analysis (PCA), against the numeric explanatory variables also gives us some insight on redundancy and importance of explanatory variables. As the Scree Plot inf figure \ref{ScreePlot} illustrates only three components can explain over 99% of variance, which indicates some redundancy in these variables that can be justified due to correlation between these variables.
 
 
-![Principal Component Analysis On Numerical Fields](pca_numeric.png)
+![Principal Component Analysis On Numerical Fields \label{ScreePlot}](pca_numeric.png)
 
 
 
 ## Addressing Objective 1:
 
-We used step-wise parameter selection method for training a logistic regression model which produced the following model:
+We used step-wise parameter selection method to training a logistic regression model using maximum likelihood method. Parameters of trained model and their p-values are presented in figure \ref{logit_param}
 
-![](logistic_regression_stepwise.png)
+![\label{logit_param}](logistic_regression_stepwise.png)
 
 The corresponding regression formula is as follows:
 
-Logit(Probability of Fracture) = log(Odds Ratio of Fracture) = log( Probability of Fracture/ (1-Probability of Fracture)) = 3.2477 - 0.0378 * HEIGHT + 0.4072 * RATERISK + 0.2244 * FRACSCORE
+$Logit(P_{Fracture}) = log(Odds Ratio Of Fracture) = log(P_{Fracture}/ (1-P_{Fracture})) = 3.2477 - 0.0378 * HEIGHT + 0.4072 * RATERISK + 0.2244 * FRACSCORE$
 
 In other words:
 
-Probability of Fracture = Softmax(3.2477 - 0.0378 * HEIGHT + 0.4072 * RATERISK + 0.2244 * FRACSCORE)
+$P_{Fracture} = Softmax(3.2477 - 0.0378 * HEIGHT + 0.4072 * RATERISK + 0.2244 * FRACSCORE)$
+
+
+## Model Selection
+
+We found that step-wise parameter selection finds the simplest and most efficient logistic regression model. In next sections we compare this model with other alternatives.
+
+Table \ref{Stepwise} shows how the three variables included in the model are selected and their corresponding p-value at each step:
+![Summary of Stepwise Selction \label{Stepwise}](step_wise.png)
+
+## Model evaluation:
+
+Model fit statistics for the selected model is shown in figure \ref{model_fit_statistics_sas.png} deviance = 514.085. 
+
+![Model fit statistics \label{model_fit_statistics_sas.png}](model_fit_statistics_sas.png)
+
+These error metrics are based on the training dataset, so they only show how well the model is able to fit the data. But it does not show how well the model is able to generalize. We evaluated the same model using corss validation and produced the ROC curve in figure \ref{roc_curve_sas_logistic} that shows the specificity and sensitivity of the model and it's capability to generalize. The Area Under the Curve (AUC) is 0.6927, which is reasonabily good and signficicantlty better then arandom model (AUC = 0.5). In future sections we compare this model aginst other competing models.
+
+![\label{roc_curve_sas_logistic}](roc_curve_sas_logistic.png)
+
+
+
+###		Checking Assumptions
+
+??? (TODO: Bradley)
+			
+###	Parameter Interpretation
+
+The coeficient of each parameter in the model represents how much the natural logarithm of the odd ration of fracture changes if the parameter increases by one unit, assuming all other parameters remain unchanged. For example when RATERISK increases by 1, the log of odd ratio of frature increases by 0.4072, which means the od ratio increases by $e^0.4072 = 1.503 (this value along with it's 95% confidence interval is also present in the Odds ration Estimate table).
 
 The negative coefficient of HEIGHT is consistent with negative correlation that was illustrated by a pink circle in the correlation matrix in the previous section.
 
-The following tables shows how these three variables are selected and their corresponding p-value for selection.
-![](step_wise.png)
+Effect of each variable on the odds ratio (point estimate and 95% confidence interval) is presented in the figure \ref{mylabel}:
 
-Effect of each variable on the odds ratio (point estimate and 95% confidence interval) is presented in the following table:
-![](odds_ratio.png)
+![\label{mylabel}](odds_ratio.png)
 
-
-## Model Selection Required
-
-### Type of Selection
-			Any or all:  	, RIDGE, ELASTIC NET,
-			Step-wise, Forward, Backward 
-			Manual / Intuition		
-
-###		Checking Assumptions Required
-                                        Lack of fit test
-                                        Influential point analysis (Cook’s D and Leverage)
-			Optional  Residual Plots
-			
-###	Parameter Interpretation
-		Interpretation  Required
-		Confidence Intervals Required
 	
-### Final conclusions from the analyses of Objective 1 Required
+### Final conclusions from the analyses of Objective 1
+
+In the above analysis we trained a logistic regression that predicts if a subject will have fracture in one year after the last examination. A stepwise parameter selection slected the following parameters as most predictive parameters: HEIGHT, RATERISK, FRACSCORE. The relative low deviance and hight AUC indicates the predictive power of the model.
+
+??? (TODO add more details: Bradley)
+
 
 ## Addressing Objective 2
-Make sure it is clear how many models were created to compete against the one in Objective 1.  Make note of any tuning parameters that were used and how you came up with them (knn and random forest logistics)  Required
+In this section we compare the logistic regression model against the following models: Linear Discriminat Analysis (LDA), Quadratic Discrimint Analysis (QDA), Random Forest (RF). To avoid overfiting and proerly evaluate generalization capability of the models we divided the data set into a train (60%) and test dataset (40%). We only used the three explanratory parameters that the stepwise parameter selection selected in the previous section (i.e. HEIGHT, RATERISK, FRACSCORE).
 
-Main Analysis Content Required
-	Overall report of the error metrics on a test set or CV run.  Also if the two best models have error rates of .05 and .045,  can we really say that one model is outperforming the other?  What other tools that we learned in the second half of this class that could help us get at that?
+To compare the models, we present confusion matrix, acuracy, and AUC metrics. We also visually compare their ROC curves.
 
-## Conclusion/Discussion Required
-		The conclusion should reprise the questions and conclusions of objective 2 with recommendations of the final model, what could be done to help analysis and model building in the future, and any insight as to why one method outshined all the rest if that is indeed the case.  If they all are similar why did you go with your final model?
-
-## Appendix Required
-	Well commented SAS/R Code Required
- 	Graphics and summary tables (Can be placed in the appendix or in the written report itself.)
-
-## References
-* Section 1.6.3: https://ia800206.us.archive.org/7/items/WileySeriesInProbabilityAndStatisticsDavidW.HosmerStanleyLemeshowRodneyX.Sturdiv/(Wiley%20Series%20in%20Probability%20and%20Statistics)%20David%20W.%20Hosmer,%20Stanley%20Lemeshow,%20Rodney%20X.%20Sturdivant%20(auth.),%20Walter%20A.%20Shewhart,%20Samuel%20S.%20Wilks%20(eds.)-Applied%20Logistic%20Regression-Wiley%20(2013).pdf
-* 
-
-```{r}
+```{r include=FALSE}
 library(MASS)       # provides LDA & QDA model functions
 
 
@@ -135,109 +140,70 @@ sample <- sample(c(TRUE, FALSE), nrow(glow500), replace = T, prob = c(0.6,0.4))
 train <- glow500[sample, ]
 test <- glow500[!sample, ]
 
+```
+
+```{r include=FALSE}
+# Train the models
+
+# Train the logistic regression mode
+(glm.fit <- glm(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+
+# Train the lda model
 (lda.m1 <- lda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
-```
 
-```{r}
-pairs(glow500)
-```
+# Train theh qda model
+(qda.m1 <- qda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
 
-```{r}
-#The cor() function produces a matrix that contains all of the pairwise correlations among the predictors in a data set. 
-cor(glow500)
-```
-
-Train randomforest:
-
-```{r}
+# Train the random forest model
 library(randomForest)
 train$FRACTURE_F <- as.factor(train$FRACTURE)
-rf.m <- randomForest(FRACTURE_F ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=4, ntree=30)
+rf.m <- randomForest(FRACTURE_F ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=3, ntree=100)
+
+```
+
+```{r include=FALSE}
+# predictions on test data
+test.predicted.glm <- predict(glm.fit, test, type = "response")
+test.predicted.lda <- predict(lda.m1, newdata = test)
+test.predicted.qda <- predict(qda.m1, newdata = test)
 test.predicted.rf <- predict(rf.m, newdata = test, type="response")
+```
+
+
+```{r fig.cap="\\label{confusion} Confusion Matrices"}
+# confusion matrix 
+
+# logistic
+table(test$FRACTURE, ifelse(test.predicted.glm < 0.5, 0, 1))
+
+# lda
+table(test$FRACTURE, test.predicted.lda$class)
+
+# qda
+table(test$FRACTURE, test.predicted.qda$class)
+
+# random forset
+table(test$FRACTURE,  test.predicted.rf)
 
 ```
 
-Linear Discriminant Analysis
-
-```{r}
-(lda.m1 <- lda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
-```
-
-```{r}
-plot(lda.m1)
-```
-
-```{r}
-(qda.m1 <- qda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
-```
-
-Train linear regression model:
-
-```{r}
-(glm.fit <- glm(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
-```
-
-Evaluate random forest:
-
-```{r}
-
-library(randomForest)
-train$FRACTURE <- as.factor(train$FRACTURE)
-rf.m <- randomForest(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=5, ntree=5)
-test.predicted.rf <- predict(rf.m, newdata = test, type="response")
-
-test.predicted.rf <- predict(rf.m, newdata = test, type="response")
-# confusion matrix
-table(test$FRACTURE, test.predicted.rf)
+```{r fig.cap="\\label{accuracy} Accuracy Rates"}
 # accuracy rate
+
+# logistic
+mean(ifelse(test.predicted.glm > 0.5, 1 , 0) == test$FRACTURE)
+# lda
+mean(test.predicted.lda$class == test$FRACTURE)
+# qda
+mean(test.predicted.qda$class == test$FRACTURE)
+# random forest
 mean(test.predicted.rf == test$FRACTURE)
 ```
 
-Evaluate Linear Discriminant Analysis Model:
-
-```{r}
-# predictions
-test.predicted.lda <- predict(lda.m1, newdata = test)
-
-# confusion matrix
-table(test$FRACTURE, test.predicted.lda$class)
-# accuracy rate
-mean(test.predicted.lda$class == test$FRACTURE)
-
-```
-
-
-```{r}
-# predictions
-test.predicted.qda <- predict(qda.m1, newdata = test)
-
-# confusion matrix
-table(test$FRACTURE, test.predicted.qda$class)
-
-# accuracy rate
-mean(test.predicted.qda$class == test$FRACTURE)
-```
-
-Evaluate Linear Regression Model:
-
-Confusion Matrix:
-```{r}
-# predictions
-glm.probs <- predict(glm.fit, test, type = "response")
-
-# confusion matrix
-table(test$FRACTURE, ifelse(glm.probs < 0.5, 0, 1))
-```
-
-Accuracy:
-```{r}
-# accuracy rate
-mean(ifelse(glm.probs > 0.5, 1 , 0) == test$FRACTURE)
-```
 
 
 
-```{r}
+```{r, echo=FALSE, message=FALSE, fig.cap="\\label{roc} ROC curves"}
 # ROC curves
 library(ROCR)
 library(dplyr)
@@ -248,7 +214,7 @@ rf.m <- randomForest(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxno
 test.predicted.rf <- predict(rf.m, newdata = test, type="response")
 
 
-logistic <- prediction(glm.probs, test$FRACTURE) %>%
+logistic <- prediction(test.predicted.glm, test$FRACTURE) %>%
   performance(measure = "tpr", x.measure = "fpr")
 
 lda <- prediction(test.predicted.lda$posterior[,2], test$FRACTURE) %>%
@@ -268,9 +234,161 @@ plot(rf, add = TRUE, col = "yellow")
 
 ```
 
-```{r}
+```{r fig.cap="\\label{auc} AUCs"}
 # Logistic regression AUC
-prediction(glm.probs, test$FRACTURE) %>%
+prediction(test.predicted.glm, test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+# LDA AUC
+prediction(test.predicted.lda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+# QDA AUC
+prediction(test.predicted.qda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+# RandomForest AUC
+prediction(test.predicted.rf.prob[,2], test$FRACTURE) %>%
+  performance(measure = "auc") %>%
+  .@y.values
+
+```
+```{r, echo=FALSE,  fig.cap="\\label{lda} LDA model discriminative power"}
+plot(lda.m1)
+```
+
+## Conclusion/Discussion Required
+In this project we evaluated four different types of classification models for predicting probability of fracture using Glow500 dataset. First we use stepwise loggistic regression to find select parameters and then we trained four models using logistic regression, LDA, QDA, and random forest. The models were trained on only 60% of data and theh rest of data was used for model evaluation. We looked at confusion matrix, acuracy rates, ROC curves and AUC to compare the models. Logistic regression and LDA have very similar performance characteristics and outpeformed QDA and random forest. 
+
+??? (TODO add more details: Bradley)
+
+
+## Appendix Required
+
+R Codes:
+
+```{r, echo=FALSE, eval=FALSE}
+glow500 <- read.csv(file="glow500.csv",head=TRUE,sep=",")
+summary(glow500)
+```
+
+```{r, echo=FALSE, message=FALSE, fig.cap="\\label{corr} Correlation Matrix", eval=FALSE}
+# The following code illustrates the correlation matrix of the glov500 dataset
+#install.packages("corrplot")
+library(corrplot)
+glow500_corr <- cor(glow500)
+corrplot.mixed(glow500_corr, tl.pos="lt")
+```
+
+```{r include=FALSE, eval=FALSE}
+library(MASS)       # provides LDA & QDA model functions
+
+
+glow500 <- read.csv(file="glow500.csv",head=TRUE,sep=",")
+
+set.seed(123)
+sample <- sample(c(TRUE, FALSE), nrow(glow500), replace = T, prob = c(0.6,0.4))
+train <- glow500[sample, ]
+test <- glow500[!sample, ]
+
+```
+
+```{r include=FALSE, eval=FALSE}
+# Train the models
+
+# Train the logistic regression mode
+(glm.fit <- glm(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+
+# Train the lda model
+(lda.m1 <- lda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+
+# Train theh qda model
+(qda.m1 <- qda(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data = train))
+
+# Train the random forest model
+library(randomForest)
+train$FRACTURE_F <- as.factor(train$FRACTURE)
+rf.m <- randomForest(FRACTURE_F ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=3, ntree=100)
+
+```
+
+```{r include=FALSE, eval=FALSE}
+# predictions on test data
+test.predicted.glm <- predict(glm.fit, test, type = "response")
+test.predicted.lda <- predict(lda.m1, newdata = test)
+test.predicted.qda <- predict(qda.m1, newdata = test)
+test.predicted.rf <- predict(rf.m, newdata = test, type="response")
+```
+
+
+```{r fig.cap="\\label{confusion} Confusion Matrices", eval=FALSE}
+# confusion matrix 
+
+# logistic
+table(test$FRACTURE, ifelse(test.predicted.glm < 0.5, 0, 1))
+
+# lda
+table(test$FRACTURE, test.predicted.lda$class)
+
+# qda
+table(test$FRACTURE, test.predicted.qda$class)
+
+# random forset
+table(test$FRACTURE,  test.predicted.rf)
+
+```
+
+```{r fig.cap="\\label{accuracy} Accuracy Rates", eval=FALSE}
+# accuracy rate
+
+# logistic
+mean(ifelse(test.predicted.glm > 0.5, 1 , 0) == test$FRACTURE)
+# lda
+mean(test.predicted.lda$class == test$FRACTURE)
+# qda
+mean(test.predicted.qda$class == test$FRACTURE)
+# random forest
+mean(test.predicted.rf == test$FRACTURE)
+```
+
+
+```{r, echo=FALSE, message=FALSE, fig.cap="\\label{roc} ROC curves", eval=FALSE}
+# ROC curves
+library(ROCR)
+library(dplyr)
+
+library(randomForest)
+train$FRACTURE <- as.factor(train$FRACTURE)
+rf.m <- randomForest(FRACTURE ~ RATERISK + FRACSCORE + HEIGHT, data=train, maxnodes=5, ntree= 1000)
+test.predicted.rf <- predict(rf.m, newdata = test, type="response")
+
+
+logistic <- prediction(test.predicted.glm, test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+lda <- prediction(test.predicted.lda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+qda <- prediction(test.predicted.qda$posterior[,2], test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+test.predicted.rf.prob <- predict(rf.m, newdata = test, type="prob")
+rf <- prediction(test.predicted.rf.prob[,2], test$FRACTURE) %>%
+  performance(measure = "tpr", x.measure = "fpr")
+
+plot(logistic, col = "red")
+plot(lda, add = TRUE, col = "blue")
+plot(qda, add = TRUE, col = "green")
+plot(rf, add = TRUE, col = "yellow")
+
+```
+
+```{r fig.cap="\\label{auc} AUCs", eval=FALSE}
+# Logistic regression AUC
+prediction(test.predicted.glm, test$FRACTURE) %>%
   performance(measure = "auc") %>%
   .@y.values
 
@@ -291,8 +409,9 @@ prediction(test.predicted.rf.prob[,2], test$FRACTURE) %>%
 
 ```
 
-
-
+```{r, echo=FALSE, fig.cap="\\label{lda} LDA model discriminative power", eval=FALSE}
+plot(lda.m1)
+```
 
 SAS Codes:
 
@@ -315,17 +434,16 @@ ods graphics on;
 proc princomp data=GLOW500 plots(ncomp=3)=all n=5;
 run;
 
-proc candisc data=GLOW500 out=discrim_out ; 
-  class FRACTURE; 
-  var SITE_ID	PHY_ID PRIORFRAC AGE WEIGHT HEIGHT BMI PREMENO MOMFRAC ARMASSIST SMOKE RATERISK FRACSCORE;
+title 'Stepwise Regression on Global Longitudinal Study of Osteoporosis in Women (GLOW) Dataset';
+proc logistic data=GLOW500 outest=betas covout;
+model FRACTURE(event='1')=SITE_ID PHY_ID PRIORFRAC AGE WEIGHT HEIGHT BMI PREMENO	MOMFRAC	ARMASSIST	SMOKE	RATERISK	FRACSCORE
+                   / selection=stepwise;
+output out=pred p=phat lower=lcl upper=ucl predprob=(individual crossvalidate);
 run;
 
-	title 'Stepwise Regression on Global Longitudinal Study of Osteoporosis in Women (GLOW) Dataset';
-	proc logistic data=GLOW500 outest=betas covout;
-	model FRACTURE(event='1')=SITE_ID PHY_ID PRIORFRAC AGE WEIGHT HEIGHT BMI PREMENO	MOMFRAC	ARMASSIST	SMOKE	RATERISK	FRACSCORE
-	                   / selection=stepwise;
-	output out=pred p=phat lower=lcl upper=ucl predprob=(individual crossvalidate);
-	run;
+proc logistic data=GLOW500 rocoptions(crossvalidate) plots(only)=roc;
+model FRACTURE(event="1") = RATERISK FRACSCORE HEIGHT;
+run;
 
 data train test;
 set GLOW500;
@@ -359,16 +477,9 @@ target FRACTURE/level=nominal;
 input PRIORFRAC PREMENO MOMFRAC ARMASSIST SMOKE/level=nominal;
 input SITE_ID PHY_ID AGE WEIGHT HEIGHT BMI RATERISK FRACSCORE/level=interval;
 run;
-
-
 ```
 
+## References
+* [Wiley Series In Probability And Statistics, Section 1.6.3](https://ia800206.us.archive.org/7/items/WileySeriesInProbabilityAndStatisticsDavidW.HosmerStanleyLemeshowRodneyX.Sturdiv/(Wiley%20Series%20in%20Probability%20and%20Statistics)%20David%20W.%20Hosmer,%20Stanley%20Lemeshow,%20Rodney%20X.%20Sturdivant%20(auth.),%20Walter%20A.%20Shewhart,%20Samuel%20S.%20Wilks%20(eds.)-Applied%20Logistic%20Regression-Wiley%20(2013).pdf)
+* http://uc-r.github.io/discriminant_analysis
 
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
