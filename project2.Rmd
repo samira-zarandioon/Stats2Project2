@@ -3,13 +3,12 @@ title: "Final Project"
 author: "Samira Zarandioon and Bradley Robinson"
 date: "8/10/2018"
 output:
-  pdf_document: default
   word_document: default
 ---
 
 ## Introduction
 
-This data analysis report is based on a data set that is collected by the Global Longitudinal Study of Osteoporosis in Women (GLOW). According the official website of the research team (http://www.outcomes-umassmed.org/glow/), the goal of this research was to improve understanding of the risk and prevention of osteoporosis-related fractures among female residents of 10 countries who were 55 years of age and older. GLOW enrolled over 60,000 women through over 700 physicians in 10 countries, and conducted annual follow-up for up to 5 years through annual patient questionnaires. 
+This data analysis report is based on a data set that is collected by the Global Longitudinal Study of Osteoporosis in Women (GLOW). According the official website of the research team (http://www.outcomes-umassmed.org/glow/), the goal of this research was to improve understanding of the risk and prevention of osteoporosis-related fractures among female residents of 10 countries who were 55 years of age and older. GLOW enrolled over 60,000 women through over 700 physicians in 10 countries, and conducted annual follow-up for up to 5 years through annual patient questionnaires. In this study, we explore how to better predict, using the given data, the likelihood that a female with osteoporosis will have a bone fracture given a number of predictors.
 
 ## Data Description
 
@@ -49,7 +48,7 @@ summary(glow500)
 
 ## Exploratory Analysis
 
-Figure \ref{corr} shows a graphical representation of correlations between all the fields of glow500 datasets. This vidualizattion gives us a very good understanding of how the explanatory variables are related to each other and the response variable. For example, it shows high correlation between PHY_ID and SITE_ID. Also, from this figure we can easily see thhat BMI is highly correlated to WEIGHT, which is driven by the definition of the BMI. Moreover, it shows that FRACSCORE is highly correlated with AGE, PRIORFRAC, ..., which are used to compute the risk. Correlated variables indicate some level of redundancy in the explanatory variables.
+Figure \ref{corr} shows a graphical representation of correlations between all the fields of glow500 datasets. This visualization gives us a very good understanding of how the explanatory variables are related to each other and the response variable. For example, it shows high correlation between PHY_ID and SITE_ID. Also, from this figure we can easily see that BMI is highly correlated to WEIGHT, which is driven by the definition of the BMI. Moreover, it shows that FRACSCORE is highly correlated with AGE, PRIORFRAC, etc., which are used to compute the risk. Correlated variables indicate some level of redundancy in the explanatory variables, and warrant feature selection to prevent overfitting.
 
 Correlation of explanatory variables with the target variable FRACTURE is quite informative. The plot depicts that PRIORFRAC, AGE, ARMASSIST, and MOMFRAC have relatively high positive correlation to the target variable. However, HEIGHT has negative correlation to the target variable.
 
@@ -61,7 +60,7 @@ glow500_corr <- cor(glow500)
 corrplot.mixed(glow500_corr, tl.pos="lt")
 ```
 
-Performing Principal Component Analysis (PCA), against the numeric explanatory variables also gives us some insight on redundancy and importance of explanatory variables. As the Scree Plot inf figure \ref{ScreePlot} illustrates only three components can explain over 99% of variance, which indicates some redundancy in these variables that can be justified due to correlation between these variables.
+Performing Principal Component Analysis (PCA), against the numeric explanatory variables also gives us some insight on redundancy and importance of explanatory variables. As the Scree Plot inf figure \ref{ScreePlot} illustrates, only three components can explain over 99% of variance, which indicates some redundancy in these variables that can be justified due to correlation between these variables.
 
 
 ![Principal Component Analysis On Numerical Fields \label{ScreePlot}](pca_numeric.png)
@@ -104,7 +103,14 @@ These error metrics are based on the training dataset, so they only show how wel
 
 ###		Checking Assumptions
 
-??? (TODO: Bradley)
+
+![\label{cooks_d}](cooksdleverage.png)
+
+According to the Cook's D, it appears that within the three variables included in the model there are unlikely any values that are too influential (none are greater than 0.5). In addition, while there are no values that have large leverage in the training data and all are clustered close to each other. This makes it simpler to use all three variables without the concern that any one point would negatively affect the predictive value of the model.
+
+![\label{lackoffit}](lackoffit.png)
+
+Observing the lack of fit, we find that there is not enough evidence to reject the null hypothesis (p > 0.05) of the test that the data fits the model well. It appears that our model, using the three variables, fits the data well and that there are little concerns about outliers affecting the model output.
 			
 ###	Parameter Interpretation
 
@@ -119,9 +125,9 @@ Effect of each variable on the odds ratio (point estimate and 95% confidence int
 	
 ### Final conclusions from the analyses of Objective 1
 
-In the above analysis we trained a logistic regression that predicts if a subject will have fracture in one year after the last examination. A stepwise parameter selection slected the following parameters as most predictive parameters: HEIGHT, RATERISK, FRACSCORE. The relative low deviance and hight AUC indicates the predictive power of the model.
+In the above analysis we trained a logistic regression that predicts if a subject will have fracture in one year after the last examination. A stepwise parameter selection slected the following parameters as most predictive parameters: HEIGHT, RATERISK, FRACSCORE. The relative low deviance and high AUC indicates the predictive power of the model.
 
-??? (TODO add more details: Bradley)
+In addition, it appears that the model conforms to the assumptions of a logistic regression. There are no outliers that are too influential on the data and the lack of fit test lacked evidence to reject the fit of the model.
 
 
 ## Addressing Objective 2
@@ -261,10 +267,9 @@ plot(lda.m1)
 ```
 
 ## Conclusion/Discussion Required
-In this project we evaluated four different types of classification models for predicting probability of fracture using Glow500 dataset. First we use stepwise loggistic regression to find select parameters and then we trained four models using logistic regression, LDA, QDA, and random forest. The models were trained on only 60% of data and theh rest of data was used for model evaluation. We looked at confusion matrix, acuracy rates, ROC curves and AUC to compare the models. Logistic regression and LDA have very similar performance characteristics and outpeformed QDA and random forest. 
+In this project we evaluated four different types of classification models for predicting probability of fracture using Glow500 dataset. First we use stepwise loggistic regression to find select parameters and then we trained four models using logistic regression, LDA, QDA, and random forest. The models were trained on only 60% of data and the rest of data was used for model evaluation. We looked at confusion matrix, accuracy rates, ROC curves and AUC to compare the models. Logistic regression and LDA have very similar performance characteristics and outpeformed QDA and random forest. 
 
-??? (TODO add more details: Bradley)
-
+It appears that, using a logistic regression or LDA model, the likelihood of a woman having fractures can be predicted with some accuracy. However, even the most accurate models makes it apparent that the predictors used may be inadequate to predict with high certainty whether fractures will occur. However, since predictions can be helpful to prevent injuries, a positive error could still be benefitial if an intervention/preventative treatment is inexpensive.
 
 ## Appendix Required
 
@@ -477,6 +482,15 @@ target FRACTURE/level=nominal;
 input PRIORFRAC PREMENO MOMFRAC ARMASSIST SMOKE/level=nominal;
 input SITE_ID PHY_ID AGE WEIGHT HEIGHT BMI RATERISK FRACSCORE/level=interval;
 run;
+
+/*
+ * Checking assumptions
+ */
+proc reg data = train;
+  model FRACTURE = FRACSCORE RATERISK HEIGHT;
+  output out = t student=res cookd = cookd h = lev;
+run;
+
 ```
 
 ## References
