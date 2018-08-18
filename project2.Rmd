@@ -3,6 +3,7 @@ title: "Final Project"
 author: "Samira Zarandioon and Bradley Robinson"
 date: "8/10/2018"
 output:
+  pdf_document: default
   word_document: default
 ---
 
